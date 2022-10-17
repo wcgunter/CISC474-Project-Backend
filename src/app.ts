@@ -33,6 +33,7 @@ class Application {
     // setup routes for the express server
     public buildRoutes(): void {
         this.app.use("/api", new ApiRouter().getRouter()); // api endpoints 
+        this.app.use("/security", new SecRouter().getRouter()); // security endpoints
     }
 }
 
