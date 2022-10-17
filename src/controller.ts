@@ -1,17 +1,38 @@
 import express from "express";
-
-class MyObject{
-    constructor(public msg:string,public value:number=42){}
-}
+import axios, { AxiosRequestConfig } from "axios";
 
 export class Controller {
-    //returns something.
+    static baseURL:string="https://data.mongodb-api.com/app/data-oncwp/endpoint/data/v1";
+    static apiKey:string="SC5e4w8GsFdj1a94juqZPgvsyOFOSazcvz4Ms2aN6BXPLwArCfmPUy6G1JuZa6g8";
+    static data:any =({
+        "collection": "users", //there is also a collection called user_data
+        "database": "APIDatabase",
+        "dataSource": "CISC474Group1"
+    })
+    static config:AxiosRequestConfig = {
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Request-Headers': '*',
+          'api-key': Controller.apiKey,
+        },
+        data:null
+    };
+
+    //returns all records in the collection.
     public getHello(req: express.Request, res: express.Response): void {
-        res.send(new MyObject("hello world"));
+        Controller.config.url=Controller.baseURL+'/action/find'
+        Controller.config.data=Controller.data
+        axios(Controller.config)
+            .then(response=>res.send(JSON.stringify(response.data)))
+            .catch(error=>res.send(error));  
     }
 
-    //returns whatever you post to it.  You can use the contents of req.body to extract information being sent to the server
+    //inserts the body of the request into the database
     public postHello(req: express.Request, res: express.Response): void {
-        res.send({body: req.body});
+        Controller.config.url=Controller.baseURL+'/action/insertOne';
+        Controller.config.data={...Controller.data,document:req.body};
+        axios(Controller.config).then(result=>res.send(result))
+        .catch(err=>res.send(err))
     }
 }
