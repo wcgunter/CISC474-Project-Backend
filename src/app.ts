@@ -36,4 +36,8 @@ class Application {
         this.app.use("/security", new SecRouter().getRouter()); // security endpoints
     }
 }
+var datea = new Date("2022-10-17T00:00:00.000Z").getTime();
+var dateb = new Date("2022-10-19T00:00:00.000Z").getTime();
+console.log(datea);
+console.log(dateb);
 new Application().start();
