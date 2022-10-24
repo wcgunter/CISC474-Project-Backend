@@ -28,11 +28,11 @@ export class ApiController {
         });
     }
 
-    public async getUserLog(req: express.Request, res: express.Response): Promise<void> {
+    public async getEmployeeLogs(req: express.Request, res: express.Response): Promise<void> {
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
         
-        dbo.collection("employees").findOne({"employee_id": req.params.id}, (err:any, result:any) => {
+        dbo.collection("employees").findOne({"employee_id": req.body.employee_id}, (err:any, result:any) => {
             if (err) throw err;
             
             try{
@@ -48,17 +48,17 @@ export class ApiController {
     }
 
     //Get all users for a specific manager id
-    public async queryByManagerId(req: express.Request, res: express.Response): Promise<void> {
+    public async getEmployees(req: express.Request, res: express.Response): Promise<void> {
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
-        
-        dbo.collection("employees").find({"manager_id": req.params.id}).toArray((err:any, result:any) => {
+
+        // manager id is retrieved from the body, which is populated with security
+        dbo.collection("employees").find({"manager_id": req.body.employee_id}).toArray((err:any, result:any) => {
             if (err) throw err;
             console.log(result);
             res.status(200).send(result);
             db.close();
           });
-        
     }
 
     //Function that returns the pay and # of hours worked for a given employee ID between 2 dates
@@ -66,14 +66,14 @@ export class ApiController {
     //startDate_in is the start date in milliseconds
     //endDate_in is the end date in milliseconds
     public async getEmployeesPay(req: express.Request, res: express.Response): Promise<void> {
-        let in_employee_id = req.params.employeeID_in;
-        let in_start_date = new Date(Number(req.params.startDate_in));
-        let in_end_date = new Date(Number(req.params.endDate_in));
+        let employee_id = req.body.employee_id;
+        let in_start_date = new Date(Number(req.params.startDate));
+        let in_end_date = new Date(Number(req.params.endDate));
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
 
         //look in the collection EMPLOYEES for ONE employee with values {} (ex: {"employee_id":"000000000"})
-        dbo.collection("employees").findOne({"employee_id":in_employee_id}, (err:any, result:any) => {
+        dbo.collection("employees").findOne({"employee_id":employee_id}, (err:any, result:any) => {
             if (err) throw err;
             var pay_dollars = 0;
             var time_hours = 0;
@@ -112,22 +112,58 @@ export class ApiController {
     }
 
     // Function that adds/posts a clock event to the logs of a particular employee, 
-    // given its employee id, clock in and clock out events as Parameters.
-    // For example: employee_id = 000000000
-    // clock_in : 2022-07-11T23:50:21.817Z
-    // clock_out : 2022-07-11T23:59:21.817Z
-    // clock_in and clock_out dates are in ISO format.
+    // given its employee id, clock time, clock event (in or out), and the ID of the clock event
+    // 2022-07-11T23:50:21.817Z
     public async addClockEvent(req: express.Request, res: express.Response): Promise<void> {
-        let in_employee_id = req.params.employeeID_in;
-        let in_clock_event = new Date(req.params.clock_in);
-        let out_clock_event = new Date(req.params.clock_out);  
-        console.log(in_clock_event);
-        console.log(out_clock_event);
+        let employee_id = req.body.employee_id;
+        let clock_time = new Date(req.body.clock_time);
+        let clock_event = req.body.clock_event; // 'in' or 'out'
+        let clock_id = req.body.clock_id;  
+
         try{ 
             let db = await MongoDb.client.connect();
             let dbo = db.db(MongoDb.database); 
-            console.log("Pushed");
-            dbo.collection("employees").updateOne({"employee_id":in_employee_id}, { $push: {"logs": {"clock_in_date_time": in_clock_event, "clock_out_date_time": out_clock_event} } });
+
+            if (clock_event === 'in'){
+
+                // make sure the clock-in event doesn't exist
+                let clockEvent = await dbo.collection('employees').find(
+                    { "employee_id": employee_id, "logs": { $elemMatch: { 'clock_id': clock_id } } },
+                    { projection: {'logs.$': 1 }}).toArray();
+
+                if(clockEvent[0]?.logs[0]){
+                    res.status(400).send("Error - clock event exists. Cannot clock in");
+                    return;
+                }
+
+                // push new clock event with clock-in time
+                let response = await dbo.collection("employees").updateOne(
+                    {"employee_id": employee_id}, 
+                    { $push: {"logs": {'clock_in_date_time': clock_time, 'clock_id': clock_id} } }
+                );
+                
+                console.log(response);
+                
+            } else if (clock_event === 'out'){
+
+                // make sure the clock-out event does not exist
+                let clockEvent = await dbo.collection('employees').find(
+                    { "employee_id": employee_id, "logs": { $elemMatch: { 'clock_id': clock_id } } },
+                    { projection: {'logs.$': 1 }}).toArray();
+
+                if (clockEvent[0]?.logs[0].clock_out_date_time){
+                    res.status(400).send("Error - clock event exists. Cannot clock out");
+                    return;
+                }
+
+                // set the clock_out_date_time on the log
+                let response = await dbo.collection("employees").updateOne(
+                    {"employee_id": employee_id, "logs":{ $elemMatch: { 'clock_id': clock_id } }}, 
+                    { $set: {"logs.$.clock_out_date_time": clock_time } }
+                );
+
+                console.log(response);
+            }
             res.status(200).send("Done")
         }
         catch (err) {
@@ -143,15 +179,16 @@ export class ApiController {
     // clock_out : 2022-07-11T23:59:21.817Z
     // clock_in and clock_out dates are in ISO format.
     public async deleteClockEvent(req: express.Request, res: express.Response) : Promise<void>{
-        let in_employee_id = req.params.employeeID_in;
-        let in_clock_event = new Date(req.params.clock_in);
-        let out_clock_event = new Date(req.params.clock_out);
-        console.log(in_clock_event);
-        console.log(out_clock_event);
+        let employee_id = req.body.employee_id;
+        let clock_id = req.body.clock_id;
+
         try{ 
             let db = await MongoDb.client.connect();
             let dbo = db.db(MongoDb.database);
-            dbo.collection("employees").updateOne({"employee_id":in_employee_id}, {$pull: {"logs" : {"clock_in_date_time" : in_clock_event, "clock_out_date_time": out_clock_event}}});
+            dbo.collection("employees").updateOne(
+                {"employee_id":employee_id}, 
+                {$pull: {'logs' : {"clock_id": clock_id}}});
+
             res.status(200).send("Deleted");
             console.log("Deleted");
         }
@@ -163,31 +200,21 @@ export class ApiController {
 
     // Function that edits a clock event from the array of logs of a particular employee
     // by replacing that event with the new clock event, 
-    // given its employee id, the clock in and clock out events to be edited and the new clock-in and clock-out values.
-    // For example: employee_id = 000000000
-    // original_clock_in : 2022-07-11T23:50:21.817Z
-    // origianal_clock_out : 2022-07-11T23:59:21.817Z
-    // new_clock_in : 2022-07-15T23:50:21.817Z
-    // new_clock_out : 2022-07-15T23:59:21.817Z
-    // clock_in and clock_out dates are in ISO format.
+    // given its employee id, the clock_id for the clock event to edit, and the clock times to set.
     public async replaceClockEvent(req: express.Request, res: express.Response) : Promise<void>{
-        let in_employee_id = req.params.employeeID_in;
-        let original_in_clock_event = new Date(req.params.original_clock_in);
-        let original_out_clock_event = new Date(req.params.original_clock_out);
-        let new_in_clock_event = new Date(req.params.new_clock_in);
-        let new_out_clock_event = new Date(req.params.new_clock_out);
-
-        console.log(original_in_clock_event);
-        console.log(original_out_clock_event);
-
-        console.log(new_in_clock_event);
-        console.log(new_out_clock_event);
+        let employee_id = req.body.employee_id;
+        let clock_id = req.body.clock_id;
+        let clock_in_time = new Date(req.body.clock_in_time);
+        let clock_out_time = new Date(req.body.clock_out_time);
 
         try{ 
             let db = await MongoDb.client.connect(); 
             let dbo = db.db(MongoDb.database);
-            dbo.collection("employees").updateOne({"employee_id":in_employee_id, "logs" : {"clock_in_date_time" : original_in_clock_event, "clock_out_date_time": original_out_clock_event}}, {$set: {"logs.$" : {"clock_in_date_time" : new_in_clock_event, "clock_out_date_time": new_out_clock_event}}});
-            res.status(200).send("put");
+            dbo.collection("employees").updateOne(
+                {"employee_id":employee_id,  "logs":{ $elemMatch: { 'clock_id': clock_id } }}, 
+                {$set: {"logs.$" : {"clock_in_date_time" : clock_in_time, "clock_out_date_time": clock_out_time, "clock_id": clock_id}}}
+            );
+            res.status(200).send("updated clock event");
             console.log("put");
         }
         catch (err) {
