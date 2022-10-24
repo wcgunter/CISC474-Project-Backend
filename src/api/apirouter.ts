@@ -9,6 +9,8 @@ export class ApiRouter {
     public getRouter(): express.Router {
         this.router.get("/hello", this.controller.getHello);
         this.router.get("/employees/:employeeID_in/:startDate_in/:endDate_in", this.controller.getEmployeesPay);
+        this.router.get(`/userlogs/:id`, this.controller.getUserLog);
+        this.router.get(`/queryByManagerId/:id`, this.controller.queryByManagerId);
         return this.router;
     }
 }
