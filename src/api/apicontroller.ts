@@ -28,6 +28,39 @@ export class ApiController {
         });
     }
 
+    public async getUserLog(req: express.Request, res: express.Response): Promise<void> {
+        let db = await MongoDb.client.connect(); //connect to mongo
+        let dbo = db.db(MongoDb.database); //get our database
+        
+        dbo.collection("employees").findOne({"employee_id": req.params.id}, (err:any, result:any) => {
+            if (err) throw err;
+            
+            try{
+                res.status(200).send(result.logs);
+                console.log(result.logs);
+            } catch {
+                res.status(200).send(result);
+                console.log(result);
+            }
+            
+            db.close();
+        });
+    }
+
+    //Get all users for a specific manager id
+    public async queryByManagerId(req: express.Request, res: express.Response): Promise<void> {
+        let db = await MongoDb.client.connect(); //connect to mongo
+        let dbo = db.db(MongoDb.database); //get our database
+        
+        dbo.collection("employees").find({"manager_id": req.params.id}).toArray((err:any, result:any) => {
+            if (err) throw err;
+            console.log(result);
+            res.status(200).send(result);
+            db.close();
+          });
+        
+    }
+
     //Function that returns the pay and # of hours worked for a given employee ID between 2 dates
     //employeeID_in is the employee ID
     //startDate_in is the start date in milliseconds
@@ -36,7 +69,6 @@ export class ApiController {
         let in_employee_id = req.params.employeeID_in;
         let in_start_date = new Date(Number(req.params.startDate_in));
         let in_end_date = new Date(Number(req.params.endDate_in));
-
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
 
