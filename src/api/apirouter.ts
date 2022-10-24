@@ -1,4 +1,5 @@
 import express from "express";
+import { SecUtils } from "../secutils";
 import {ApiController} from "./apicontroller";
 
 export class ApiRouter {
@@ -7,13 +8,15 @@ export class ApiRouter {
 
     // Creates the routes for this router and returns a populated router object
     public getRouter(): express.Router {
-        this.router.get("/hello", this.controller.getHello);
-        this.router.get("/employees/:employeeID_in/:startDate_in/:endDate_in", this.controller.getEmployeesPay);
-        this.router.get(`/userlogs/:id`, this.controller.getUserLog);
-        this.router.get(`/queryByManagerId/:id`, this.controller.queryByManagerId);
-        this.router.post("/employees/:employeeID_in/:clock_in/:clock_out", this.controller.addClockEvent);
-        this.router.delete("/employees/:employeeID_in/:clock_in/:clock_out", this.controller.deleteClockEvent);
-        this.router.put("/employees/:employeeID_in/:original_clock_in/:original_clock_out/:new_clock_in/:new_clock_out", this.controller.replaceClockEvent);
+        
+        this.router.get('/employee/pay/:startDate/:endDate', SecUtils.middleware, this.controller.getEmployeesPay);
+
+        this.router.get('/employee/logs', SecUtils.middleware, this.controller.getEmployeeLogs);
+        this.router.get('/employees/', SecUtils.middleware, this.controller.getEmployees);
+
+        this.router.post('/clock/', SecUtils.middleware, this.controller.addClockEvent);
+        this.router.delete('/clock/', SecUtils.middleware, this.controller.deleteClockEvent);
+        this.router.put('/clock/', SecUtils.middleware, this.controller.replaceClockEvent);
         return this.router;
     }
 }
