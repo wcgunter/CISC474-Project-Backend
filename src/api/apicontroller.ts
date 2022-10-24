@@ -47,11 +47,33 @@ export class ApiController {
             var time_hours = 0;
             var pay_rate = 0;
             result.logs.forEach((element: TimeSheet) => {
+                console.log(element);
                 var start_date = new Date(element.clock_in_date_time);
                 var end_date = new Date(element.clock_out_date_time);
+                console.log("in_start_date: " + in_start_date.getTime() + " \nin_end_date: " + in_end_date.getTime() + " \nstart_date: " + start_date.getTime() + " \nend_date: " + end_date.getTime());
+                console.log(in_start_date <= end_date)
                 if ((in_start_date <= end_date && start_date <= in_end_date)) {
-                    var time_worked = end_date.getTime() - start_date.getTime();
-                    time_hours += time_worked / 1000 / 60 / 60;
+                    var largerStart = 0;
+                    var smallerEnd = 0;
+                    if (start_date > in_start_date) {
+                        largerStart = start_date.getTime();
+                        console.log("largerStart: shift start")
+                    } else {
+                        largerStart = in_start_date.getTime();
+                        console.log("largerStart: search start")
+                    }
+                    if (end_date < in_end_date) {
+                        smallerEnd = end_date.getTime();
+                        console.log("smallerEnd: shift end")
+                    } else {
+                        smallerEnd = in_end_date.getTime();
+                        console.log("smallerEnd: search end")
+                        
+                    }
+                    console.log("largerStart: " + largerStart + " \nsmallerEnd: " + smallerEnd);
+                    let time_worked = (smallerEnd - largerStart) / 1000 / 60 / 60;
+                    console.log("Time worked: " + time_worked);
+                    time_hours += time_worked;
                     result.jobs.forEach((job: any) => {
                         var job_start_date = new Date(String(job.start_date));
                         if(start_date >= job_start_date) {
