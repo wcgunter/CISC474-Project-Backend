@@ -14,9 +14,9 @@ export class ApiRouter {
         this.router.get('/employee/logs', SecUtils.middleware, this.controller.getEmployeeLogs);
         this.router.get('/employees/', SecUtils.middleware, this.controller.getEmployees);
 
-        this.router.post('/clock/', SecUtils.middleware, this.controller.addClockEvent);
+        this.router.post('/clock/', SecUtils.middleware, this.controller.postClockEvent);
         this.router.delete('/clock/', SecUtils.middleware, this.controller.deleteClockEvent);
-        this.router.put('/clock/', SecUtils.middleware, this.controller.replaceClockEvent);
+        this.router.put('/clock/', SecUtils.middleware, this.controller.putClockEvent);
         return this.router;
     }
 }
