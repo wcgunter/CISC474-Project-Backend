@@ -24,7 +24,7 @@ export class SecController {
 				return;
 			}
 			// username and employee ID get sent in the token
-			const token = SecUtils.getToken({ _id: result._id, username: username, employeeId: result.employee_id });
+			const token = SecUtils.getToken({ _id: result._id, username: username, employee_id: result._id });
 			db.close();
 			res.status(200).send({ status: 'ok', data: { token: token } });
 		} catch (e) {
@@ -65,7 +65,7 @@ export class SecController {
 			// TODO - populate data for employee record
 			const employeeRecord = {
 				// user's _id is the employee id
-				employee_id: userResult.insertedId,
+				employee_id: userResult.insertedId.toString(),
 				first_name: "first name",
 				last_name: "last name",
 				address: "my address",
