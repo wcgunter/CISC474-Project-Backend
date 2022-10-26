@@ -15,26 +15,30 @@ interface Job {
 
 export class ApiController {
 
+    /**
+     * Get the list of clock logs for the authenticated employee
+     * @body employee_id (populated via secutils)
+     * @returns list of clock logs
+     */
     public async getEmployeeLogs(req: express.Request, res: express.Response): Promise<void> {
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
         
         dbo.collection("employees").findOne({"employee_id": req.body.employee_id}, (err:any, result:any) => {
             if (err) throw err;
-            
-            try{
-                res.status(200).send(result.logs);
-                console.log(result.logs);
-            } catch {
-                res.status(200).send(result);
-                console.log(result);
-            }
-            
+
+            console.log(result.logs);
             db.close();
+            res.status(200).send({status: 200, data: result.logs});
+            
         });
     }
 
-    //Get all users for a specific manager id
+    /**
+     * Get the list of employees under the authenticated manager
+     * @body employee_id (populated via secutils)
+     * @returns list of employee ids
+     */
     public async getEmployees(req: express.Request, res: express.Response): Promise<void> {
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
@@ -43,15 +47,19 @@ export class ApiController {
         dbo.collection("employees").find({"manager_id": req.body.employee_id}).toArray((err:any, result:any) => {
             if (err) throw err;
             console.log(result);
-            res.status(200).send(result);
             db.close();
+            res.status(200).send({status: 200, data: result});
           });
     }
 
-    //Function that returns the pay and # of hours worked for a given employee ID between 2 dates
-    //employeeID_in is the employee ID
-    //startDate_in is the start date in milliseconds
-    //endDate_in is the end date in milliseconds
+    /**
+     * Get the hours worked and pay for the authenticated employee
+     *  in a given time frame
+     * @body employee_id (populated via secutils)
+     * @param startDate - start of time period in ms
+     * @param endDate - end of time period in ms
+     * @returns hours worked and pay
+     */
     public async getEmployeesPay(req: express.Request, res: express.Response): Promise<void> {
         let employee_id = req.body.employee_id;
         let in_start_date = new Date(Number(req.params.startDate));
@@ -59,7 +67,6 @@ export class ApiController {
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
 
-        //look in the collection EMPLOYEES for ONE employee with values {} (ex: {"employee_id":"000000000"})
         dbo.collection("employees").findOne({"employee_id":employee_id}, (err:any, result:any) => {
             if (err) throw err;
             var pay_dollars = 0;
@@ -93,15 +100,22 @@ export class ApiController {
                     pay_dollars += time_hours * pay_rate;
                 }
             });
-            res.status(200).send("Hours worked: " + time_hours + " Pay: $" + pay_dollars);
             db.close();
+            res.status(200).send({status: 200, data: {hours_worked: time_hours, pay: pay_dollars}});
         });
     }
 
-    // Function that adds/posts a clock event to the logs of a particular employee, 
-    // given its employee id, clock time, clock event (in or out), and the ID of the clock event
-    // 2022-07-11T23:50:21.817Z
-    public async addClockEvent(req: express.Request, res: express.Response): Promise<void> {
+    /**
+     * Posts a new clock event for the authenticated employee
+     *  Creates new log object for 'in' events and
+     *  adds field clock_out_date_time for 'out' events
+     * @body employee_id
+     * @body clock_time - time as a date string (ex: 2022-07-11T23:50:21.817Z)
+     * @body clock_event - in/out
+     * @body clock_id
+     * @returns status - if clock event is added
+     */
+    public async postClockEvent(req: express.Request, res: express.Response): Promise<void> {
         let employee_id = req.body.employee_id;
         let clock_time = new Date(req.body.clock_time);
         let clock_event = req.body.clock_event; // 'in' or 'out'
@@ -119,7 +133,8 @@ export class ApiController {
                     { projection: {'logs.$': 1 }}).toArray();
 
                 if(clockEvent[0]?.logs[0]){
-                    res.status(400).send("Error - clock event exists. Cannot clock in");
+                    db.close();
+                    res.status(400).send({status: 400, data: "Error - clock event exists. Cannot clock in"});
                     return;
                 }
 
@@ -128,8 +143,15 @@ export class ApiController {
                     {"employee_id": employee_id}, 
                     { $push: {"logs": {'clock_in_date_time': clock_time, 'clock_id': clock_id} } }
                 );
-                
+
+                db.close();
+
                 console.log(response);
+                if(response.modifiedCount > 0)
+                    res.status(200).send({status: 200, data: "Inserted clock event"});
+                else
+                    res.status(400).send({status: 400, data: "Failed to insert clock event"});
+
                 
             } else if (clock_event === 'out'){
 
@@ -138,8 +160,9 @@ export class ApiController {
                     { "employee_id": employee_id, "logs": { $elemMatch: { 'clock_id': clock_id } } },
                     { projection: {'logs.$': 1 }}).toArray();
 
-                if (clockEvent[0]?.logs[0].clock_out_date_time){
-                    res.status(400).send("Error - clock event exists. Cannot clock out");
+                if (clockEvent[0]?.logs[0].clock_out_date_time){            
+                    db.close();
+                    res.status(400).send({status: 400, data: "Error - clock event exists. Cannot clock out"});
                     return;
                 }
 
@@ -149,22 +172,28 @@ export class ApiController {
                     { $set: {"logs.$.clock_out_date_time": clock_time } }
                 );
 
+                db.close();
+
                 console.log(response);
+                if(response.modifiedCount > 0)
+                    res.status(200).send({status: 200, data: "Inserted clock event"});
+                else
+                    res.status(400).send({status: 400, data: "Failed to insert clock event"});
+
             }
-            res.status(200).send("Done")
         }
         catch (err) {
             console.error(err);
-            res.send(400).send('Server Error');
+            res.send(500).send({status: 500, data: 'Internal Server Error'});
         }
     }
 
-    // Function that deletes a clock event from the array of logs of a particular employee, 
-    // given its employee id, clock in and clock out events as Parameters.
-    // For example: employee_id = 000000000
-    // clock_in : 2022-07-11T23:50:21.817Z
-    // clock_out : 2022-07-11T23:59:21.817Z
-    // clock_in and clock_out dates are in ISO format.
+    /**
+     * Deletes a clock event for the authenticated employee
+     * @body employee_id
+     * @body clock_id
+     * @returns status - if clock event is deleted
+     */
     public async deleteClockEvent(req: express.Request, res: express.Response) : Promise<void>{
         let employee_id = req.body.employee_id;
         let clock_id = req.body.clock_id;
@@ -172,23 +201,33 @@ export class ApiController {
         try{ 
             let db = await MongoDb.client.connect();
             let dbo = db.db(MongoDb.database);
-            dbo.collection("employees").updateOne(
+            let response = await dbo.collection("employees").updateOne(
                 {"employee_id":employee_id}, 
                 {$pull: {'logs' : {"clock_id": clock_id}}});
 
-            res.status(200).send("Deleted");
-            console.log("Deleted");
+            db.close();
+
+            console.log(response);
+            if(response.modifiedCount > 0)
+                res.status(200).send({status: 200, data: "deleted clock event"});
+            else
+                res.status(400).send({status: 400, data: "Failed to delete clock event"});
         }
         catch (err) {
             console.error(err);
-            res.send(400).send('Server Error');
+            res.send(500).send({status: 500, data: 'Internal Server Error'});
         }
     }
 
-    // Function that edits a clock event from the array of logs of a particular employee
-    // by replacing that event with the new clock event, 
-    // given its employee id, the clock_id for the clock event to edit, and the clock times to set.
-    public async replaceClockEvent(req: express.Request, res: express.Response) : Promise<void>{
+     /**
+     * Puts/edits a clock event for the authenticated employee
+     * @body employee_id
+     * @body clock_id
+     * @body clock_in_time - time to set as clock in (date string)
+     * @body clock_out_time - time to set as clock out (date string)
+     * @returns status - if clock event is updated
+     */
+    public async putClockEvent(req: express.Request, res: express.Response) : Promise<void>{
         let employee_id = req.body.employee_id;
         let clock_id = req.body.clock_id;
         let clock_in_time = new Date(req.body.clock_in_time);
@@ -197,16 +236,22 @@ export class ApiController {
         try{ 
             let db = await MongoDb.client.connect(); 
             let dbo = db.db(MongoDb.database);
-            dbo.collection("employees").updateOne(
+            let response = await dbo.collection("employees").updateOne(
                 {"employee_id":employee_id,  "logs":{ $elemMatch: { 'clock_id': clock_id } }}, 
                 {$set: {"logs.$" : {"clock_in_date_time" : clock_in_time, "clock_out_date_time": clock_out_time, "clock_id": clock_id}}}
             );
-            res.status(200).send("updated clock event");
-            console.log("put");
-        }
+
+            db.close();
+
+            console.log(response);
+            if(response.modifiedCount > 0)
+                res.status(200).send({status: 200, data: "Updated clock event"});
+            else
+                res.status(400).send({status: 400, data: "Failed to update clock event"});
+    }
         catch (err) {
             console.error(err);
-            res.send(400).send('Server Error');
+            res.status(500).send({status: 500, data: 'Internal Server Error'});
         }
     }
 }
