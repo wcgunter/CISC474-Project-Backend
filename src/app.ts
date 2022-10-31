@@ -36,5 +36,4 @@ class Application {
         this.app.use("/security", new SecRouter().getRouter()); // security endpoints
     }
 }
-
 new Application().start();
