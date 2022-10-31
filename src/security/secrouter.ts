@@ -1,4 +1,5 @@
 import express from "express";
+import { SecUtils } from "../secutils";
 import {SecController} from "./seccontroller";
 
 export class SecRouter {
@@ -7,9 +8,9 @@ export class SecRouter {
 
     public getRouter(): express.Router {
         this.router.post('/token', this.controller.login);
-		this.router.post('/register', this.controller.register);
+		this.router.post('/register', SecUtils.middleware ,this.controller.register);
 		this.router.post('/changepwd', this.controller.changePwd);
-
+        this.router.delete('/removeUser', SecUtils.middleware ,this.controller.removeUser);
         return this.router;
     }
 }

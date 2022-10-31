@@ -33,61 +33,6 @@ export class SecController {
 		}
 	}
 
-	public async register(req: express.Request, res: express.Response): Promise<void> {
-		let {username, password} = req.body;
-		if (!username || !password) {
-			res.send({ status: 'error', data: 'username and password required' });
-			return;
-		}
-
-		try {
-			const hash: string = await SecUtils.createHash(password);
-
-			let db = (await MongoDb.client.connect());
-			let usersTable = db.db(MongoDb.database).collection('users');
-			let employeesTable = db.db(MongoDb.database).collection('employees');
-
-			// check if username is in use
-			let userResult:any = await usersTable.findOne({ username: username });
-			if (userResult) {
-				res.send({ status: 'error', data: 'Username in use' });
-				return;
-			}
-			
-			// create user in users table
-			const userRecord = {
-				username: username,
-				password: hash,
-			}; 
-			userResult = await usersTable.insertOne(userRecord);
-
-			// create employee in employees table
-			// TODO - populate data for employee record
-			const employeeRecord = {
-				// user's _id is the employee id
-				employee_id: userResult.insertedId.toString(),
-				first_name: "first name",
-				last_name: "last name",
-				address: "my address",
-				jobs: [{
-					start_date: new Date(), // new employee starts today
-					title: "job title",
-					pay_rate: 123,
-					level: "L1"
-				}],
-				manager_id: "manager's employee id",
-				status: "Active",
-				logs: [] // no logs for new employee
-			};
-			let employeeResult:any = await employeesTable.insertOne(employeeRecord);
-			
-			res.send({ status: 'ok', data: [userResult.insertedId, employeeResult.insertedId]});
-		} catch (e) {
-			console.error(e);
-			res.send({ status: 'error', data: e });
-		}
-	}
-
 	public async changePwd(req: express.Request, res: express.Response): Promise<void> {
         res.send('change password endpoint');
     }
@@ -95,37 +40,102 @@ export class SecController {
 	public async removeUser(req: express.Request, res: express.Response): Promise<void> {
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
-        
-        // look in the collection EMPLOYEES for ONE emloyee with values {} (ex: {"employee_id":"000000000"})
-        dbo.collection("employees").findOneAndDelete({"employee_id":req.body.id}).then((result) => {
-			if (!result.ok){
-				res.status(500).send("Not able to find and Delete");
-			}else if(result.value == null){
-				res.status(404).send("Employee ID not found");
+
+		let target = req.body.user.employee_id
+
+		//checks if there is an admin with that username
+		dbo.collection('employees').findOne({ employee_id: req.body.employee_id }).then((existingUser:any) => {
+			//checks if the user has admin access
+			// if (existingUser?.admin){
+			if (true){
+				dbo.collection('employees').findOneAndUpdate({employee_id: target}, {$set :{status: "Terminated"}}).then((employeeResult) => {
+					if (!employeeResult.ok){
+						return res.status(500).send({'employee': employeeResult})
+					}else if (!employeeResult.value){
+						return res.status(404).send({'employee': 'Employee ID not found'})
+					}else{
+						dbo.collection('users').findOneAndDelete({employee_id: target}).then((userResult) => {
+							if (userResult.ok){
+								return res.status(200).send({'user' : userResult.value, 'employee': employeeResult.value})
+							}else{
+								return res.status(500).send({'user' : userResult, 'employee': employeeResult})
+							}
+						})
+					}
+				})
 			}else{
-				res.status(200).send(result.value);
+				return res.status(403).send({ status: 'error', data: 'Invalid login' });
 			}
-		})
-	
+		})	
 	}
 
-	public async registerUser(req: express.Request, res: express.Response): Promise<void> {
+	public async register(req: express.Request, res: express.Response): Promise<void> {
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
-        
-        // look in the collection EMPLOYEES for ONE emloyee with values {} (ex: {"employee_id":"000000000"})
-        dbo.collection("employees").insertOne(req.body).then((result) => {
-			if(result.acknowledged){
-				return res.status(200).send(result.insertedId);
+
+		let newUser = {
+			email : req.body.user.email,
+			username : req.body.user.username,
+			password : await SecUtils.createHash(req.body.user.password),
+			employee_id : req.body.user.employee_id
+		}
+
+		let newEmployee: any = {
+			first_name: req.body.employee.first_name,
+			last_name : req.body.employee.last_name,
+			address : req.body.employee.address,
+			employee_id : req.body.user.employee_id,
+			jobs: [{
+					start_date: new Date(), // new employee starts today
+					title: "job title",
+					pay_rate: 123,
+					level: "L1"
+			}],
+			manager_id: req.body.employee.manager_id,
+			status: "Active",
+			logs: [] // no logs for new employee
+
+		}
+
+		//checks if there is an admin with that username
+		dbo.collection('employees').findOne({ employee_id: req.body.employee_id }).then((existingUser:any) => {
+			//checks if the user has admin access
+			//if (existingUser?.admin){
+			if (true){
+				//inserts user into the users table
+				dbo.collection("users").insertOne(newUser).then((userResult) => {
+					if(userResult.acknowledged){
+						//tries to insert employee into the employees table 
+						dbo.collection('employees').insertOne(newEmployee).then((employeeResult) => {
+							if (employeeResult.acknowledged){
+								return res.status(200).send({'user': userResult, 'employee' : employeeResult});
+							}else{
+							//employee result was not acknowledged
+								return res.status(500).send({'employees': employeeResult})
+							}
+						}).catch((e) => {
+							//this code means that the key already exist
+							if (e.code == '11000'){
+								dbo.collection('employees').findOneAndUpdate({employee_id : newEmployee.employee_id}, {$set : {status : 'Active'}, $push: {jobs : newEmployee.jobs[0]}}).then(() => {
+									return res.status(302).send({'user': userResult, 'employee': "Employee ID in employees table already exists but is updated"});
+								})		
+							}else{
+								//some other employees table error
+								return res.status(500).send({'user': userResult, 'employee' : e})
+							}
+						})
+					}else{
+						//user result was not acknowledged
+						return res.status(500).send(userResult);
+					}
+				}).catch((e)=>{
+					if(e.code == "11000"){
+						return res.status(302).send("Employee ID in user table already exists")
+					}
+				})
 			}else{
-				return res.status(500).send("Some odd reason")
-			}
-		}).catch((e)=>{
-			if(e.code == "11000"){
-				res.status(302).send("Employee ID already exists")
+				return res.status(403).send({ status: 'error', data: 'Invalid login' });
 			}
 		})
-	
 	}
-
 }
