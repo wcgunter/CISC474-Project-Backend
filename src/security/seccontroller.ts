@@ -1,4 +1,5 @@
 import express from "express";
+import { Db, ObjectId } from "mongodb";
 import { MongoDb } from "../MongoDb";
 import { SecUtils } from "../secutils";
 
@@ -44,10 +45,9 @@ export class SecController {
 		let target = req.body.user.employee_id
 
 		//checks if there is an admin with that username
-		dbo.collection('employees').findOne({ employee_id: req.body.employee_id }).then((existingUser:any) => {
+		dbo.collection('users').findOne({ _id: new ObjectId(req.body.employee_id) }).then((existingUser: any) => {
 			//checks if the user has admin access
-			// if (existingUser?.admin){
-			if (true){
+			if (existingUser?.admin){
 				dbo.collection('employees').findOneAndUpdate({employee_id: target}, {$set :{status: "Terminated"}}).then((employeeResult) => {
 					if (!employeeResult.ok){
 						return res.status(500).send({'employee': employeeResult})
@@ -73,23 +73,24 @@ export class SecController {
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
 
-		let newUser = {
+		let newUser:any = {
 			email : req.body.user.email,
 			username : req.body.user.username,
 			password : await SecUtils.createHash(req.body.user.password),
-			employee_id : req.body.user.employee_id
+			employee_id : req.body.user.employee_id,
+			admin : req.body.employee.admin
 		}
 
-		let newEmployee: any = {
+		let newEmployee:any = {
 			first_name: req.body.employee.first_name,
 			last_name : req.body.employee.last_name,
 			address : req.body.employee.address,
 			employee_id : req.body.user.employee_id,
 			jobs: [{
 					start_date: new Date(), // new employee starts today
-					title: "job title",
-					pay_rate: 123,
-					level: "L1"
+					title: req.body.employee.job.title,
+					pay_rate: req.body.employee.job.pay_rate,
+					level: req.body.employee.job.level
 			}],
 			manager_id: req.body.employee.manager_id,
 			status: "Active",
@@ -98,17 +99,16 @@ export class SecController {
 		}
 
 		//checks if there is an admin with that username
-		dbo.collection('employees').findOne({ employee_id: req.body.employee_id }).then((existingUser:any) => {
+		dbo.collection('users').findOne({ _id: new ObjectId(req.body.employee_id) }).then((adminResult: any) => {
 			//checks if the user has admin access
-			//if (existingUser?.admin){
-			if (true){
+			if (adminResult?.admin){
 				//inserts user into the users table
 				dbo.collection("users").insertOne(newUser).then((userResult) => {
 					if(userResult.acknowledged){
 						//tries to insert employee into the employees table 
 						dbo.collection('employees').insertOne(newEmployee).then((employeeResult) => {
 							if (employeeResult.acknowledged){
-								return res.status(200).send({'user': userResult, 'employee' : employeeResult});
+								return res.status(201).send({'user': userResult, 'employee' : employeeResult});
 							}else{
 							//employee result was not acknowledged
 								return res.status(500).send({'employees': employeeResult})
@@ -117,7 +117,7 @@ export class SecController {
 							//this code means that the key already exist
 							if (e.code == '11000'){
 								dbo.collection('employees').findOneAndUpdate({employee_id : newEmployee.employee_id}, {$set : {status : 'Active'}, $push: {jobs : newEmployee.jobs[0]}}).then(() => {
-									return res.status(302).send({'user': userResult, 'employee': "Employee ID in employees table already exists but is updated"});
+									return res.status(201).send({'user': userResult, 'employee': "Updated the existing employee with the employee_id"});
 								})		
 							}else{
 								//some other employees table error
@@ -134,7 +134,7 @@ export class SecController {
 					}
 				})
 			}else{
-				return res.status(403).send({ status: 'error', data: 'Invalid login' });
+				return res.status(403).send({ status: 'error', data: 'No Admin Access', result: adminResult});
 			}
 		})
 	}
