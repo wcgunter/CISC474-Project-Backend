@@ -11,4 +11,5 @@ build_and_deploy_heroku:
         - apt-get install -y ruby-dev
         - gem install dpl
         - dpl --provider=heroku --app=$HEROKU_APP_NAME --api-key=$HEROKU_API_KEY
-    only: main
+    only:
+        - main
