@@ -9,9 +9,9 @@ build_and_deploy_heroku:
     script:
         - touch config.ts
         - echo 'export const Config = { url :"' >> config.ts
-        - cat "$CONFIG_URL" >> config.ts
+        - echo "$CONFIG_URL" >> config.ts
         - echo '", tokenSecret:"' >> config.ts
-        - cat "$CONFIG_TOKEN" >> config.ts
+        - echo "$CONFIG_TOKEN" >> config.ts
         - echo '" };' >> config.ts
         - apt-get update -qy
         - apt-get install -y ruby-dev
