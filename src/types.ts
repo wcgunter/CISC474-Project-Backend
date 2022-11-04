@@ -19,3 +19,15 @@ export interface Employee {
 		clock_id: Number
 	}] 
 }
+
+export interface TimeSheet {
+    clock_in_date_time: string;
+    clock_out_date_time: string;
+}
+
+export interface Job {
+    start_date: string;
+    title: string;
+    pay_rate: string;
+    level: string;
+}

@@ -7,7 +7,12 @@ import { Employee } from "../types";
 
 export class SecController {
 	
-
+	/**
+     * Authenticate an employee
+     * @body username
+	 * @body password
+     * @returns auth token
+     */
 	public async login(req: express.Request, res: express.Response): Promise<void> {
         let {username, password} = req.body;
 		if (!username || !password) {
@@ -41,6 +46,12 @@ export class SecController {
         res.send('change password endpoint');
     }
 
+	/**
+     * Terminate an employee and delete the user object
+     * @body employee_id (populated via secutils) - id of the manager of the employee to terminate
+	 * @body user.employee_id - the employee_id of the employee to terminate
+     * @returns result
+     */
 	public async removeUser(req: express.Request, res: express.Response): Promise<void> {
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
@@ -70,6 +81,20 @@ export class SecController {
 		})	
 	}
 
+	/**
+     * Register a new user and create a new employee
+     * @body employee_id (populated via secutils) - this is the id of the manager creating a new employee
+	 * @body username - username of new user
+	 * @body password - password of new user
+	 * @body fisrt_name - FN of employee
+	 * @body last_name - LN of employee
+	 * @body address - address of employee
+	 * @body job_title - starting job title
+	 * @body hourly_pay - employee starting pay
+	 * @body job_level - L1/L2... level of new employee
+	 * 
+     * @returns employee_id of the new employee
+     */
 	public async register(req: express.Request, res: express.Response): Promise<void> {
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database

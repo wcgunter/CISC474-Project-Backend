@@ -1,17 +1,6 @@
 import express from "express";
 import { MongoDb } from "../MongoDb";
-
-interface TimeSheet {
-    clock_in_date_time: string;
-    clock_out_date_time: string;
-}
-
-interface Job {
-    start_date: string;
-    title: string;
-    pay_rate: string;
-    level: string;
-}
+import { TimeSheet } from "../types";
 
 export class ApiController {
 
