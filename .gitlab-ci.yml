@@ -23,4 +23,4 @@ Deploy:
     - sed -i 's/secretURL/$CONFIG_URL/' config.ts
     - sed -i 's/secretToken/$CONFIG_TOKEN/' config.ts
     - cd ..
-    - dpl --provider=heroku --app=$HEROKU_APP_NAME --api-key=$HEROKU_API_KEY
+    - dpl --provider=heroku --app=$HEROKU_APP_NAME --api-key=$HEROKU_API_KEY --skip-cleanup
