@@ -1,0 +1,4 @@
+export const Config = {
+    url: "secretURL",
+    tokenSecret: "secretToken"
+};
