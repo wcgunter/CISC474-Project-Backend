@@ -20,7 +20,7 @@ Deploy:
     - gem install dpl
     - cd src
     - mv cicdconfig.ts.ignore config.ts
-    - sed -i "s/secretURL/$CONFIG_URL/" config.ts
-    - sed -i "s/secretToken/$CONFIG_TOKEN/" config.ts
+    - sed -i "s|secretURL|$CONFIG_URL|g" config.ts
+    - sed -i "s|secretToken|$CONFIG_TOKEN|g" config.ts
     - cd ..
     - dpl --provider=heroku --app=$HEROKU_APP_NAME --api-key=$HEROKU_API_KEY --skip-cleanup
