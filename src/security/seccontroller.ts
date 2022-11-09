@@ -138,4 +138,57 @@ export class SecController {
 			}
 		})
 	}
+	public async updateEmployee(req: express.Request, res: express.Response): Promise<void> {
+		let db = await MongoDb.client.connect(); //connect to mongo
+        let dbo = db.db(MongoDb.database); //get our database
+
+		let updatedEmployee:any = {}
+
+		for (const key of Object.keys(req.body)){
+			updatedEmployee[key] = req.body[key];
+		}
+
+		dbo.collection("users").findOne({_id : new ObjectId(req.body.employee_id)}).then((adminResult) => {
+			if (adminResult?.admin){
+				dbo.collection("employees").findOneAndUpdate({employee_id: updatedEmployee.employee_id}, {$set: updatedEmployee}).then((employeeResult) => {
+					if (!employeeResult.ok){
+						return res.status(500).send(employeeResult)
+					}else if (!employeeResult.value){
+						return res.status(404).send({'employee': 'Employee ID not found'})
+					}else{
+						return res.status(200).send(employeeResult)
+					}
+				})
+			}else{
+				return res.status(403).send({ status: 'error', data: 'No Admin Access', result: adminResult});
+			}
+		})
+	}
+
+	public async updateUser(req: express.Request, res: express.Response): Promise<void> {
+		let db = await MongoDb.client.connect(); //connect to mongo
+        let dbo = db.db(MongoDb.database); //get our database
+
+		let updatedUser:any = {}
+
+		for (const key of Object.keys(req.body.user)){
+			updatedUser[key] = req.body.user[key];
+		}
+
+		dbo.collection("users").findOne({_id : new ObjectId(req.body.employee_id)}).then((adminResult) => {
+			if (adminResult?.admin){
+				dbo.collection("users").findOneAndUpdate({employee_id: updatedUser.employee_id}, {$set: updatedUser}).then((userResult) => {
+					if (!userResult.ok){
+						return res.status(500).send(userResult)
+					}else if (!userResult.value){
+						return res.status(404).send({'employee': 'Employee ID not found'})
+					}else{
+						return res.status(200).send(userResult)
+					}
+				})
+			}else{
+				return res.status(403).send({ status: 'error', data: 'No Admin Access', result: adminResult});
+			}
+		})
+	}
 }

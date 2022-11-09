@@ -11,6 +11,8 @@ export class SecRouter {
 		this.router.post('/register', SecUtils.middleware ,this.controller.register);
 		this.router.post('/changepwd', this.controller.changePwd);
         this.router.delete('/removeUser', SecUtils.middleware ,this.controller.removeUser);
+        this.router.delete('/updateUser', SecUtils.middleware ,this.controller.updateUser);
+        this.router.delete('/updateEmployee', SecUtils.middleware ,this.controller.updateEmployee);
         return this.router;
     }
 }
