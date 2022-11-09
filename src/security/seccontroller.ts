@@ -57,7 +57,7 @@ export class SecController {
         let dbo = db.db(MongoDb.database); //get our database
 
 		// employee_id = id of employee to remove, sent in body
-		let employee_id = req.body.user.employee_id;
+		let target = req.body.user.employee_id;
 		// manager_id = id of authenticated user
 		let manager_id = req.body.employee_id;
 
@@ -104,24 +104,23 @@ export class SecController {
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
 
+		let manager_id = req.body.employee_id;
+
 		let newUser:any = {
-			email : req.body.user.email,
-			username : req.body.user.username,
-			password : await SecUtils.createHash(req.body.user.password),
-			employee_id : req.body.user.employee_id,
-			admin : req.body.employee.admin
+			username : req.body.username,
+			password : await SecUtils.createHash(req.body.password),
+			admin : req.body.admin
 		}
 
 		let newEmployee:any = {
-			first_name: req.body.employee.first_name,
-			last_name : req.body.employee.last_name,
-			address : req.body.employee.address,
-			employee_id : req.body.user.employee_id,
+			first_name: req.body.first_name,
+			last_name : req.body.last_name,
+			address : req.body.address,
 			jobs: [{
 					start_date: new Date(), // new employee starts today
-					title: req.body.employee.job.title,
-					pay_rate: req.body.employee.job.pay_rate,
-					level: req.body.employee.job.level
+					title: req.body.job_title,
+					pay_rate: req.body.pay_rate,
+					level: req.body.job_level
 			}],
 			manager_id: manager_id,
 			status: "Active",
@@ -134,8 +133,9 @@ export class SecController {
 				//inserts user into the users table
 				dbo.collection("users").insertOne(newUser).then((userResult) => {
 					if(userResult.acknowledged){
-						//tries to insert employee into the employees table 
-						dbo.collection('employees').insertOne(newEmployee).then((employeeResult) => {
+						//tries to insert employee into the employees table
+						newEmployee.employee_id = userResult.insertedId.toString();
+						dbo.collection('employees').insertOne({_id:userResult.insertedId, ...newEmployee}).then((employeeResult) => {
 							if (employeeResult.acknowledged){
 								return res.status(201).send({'user': userResult, 'employee' : employeeResult});
 							}else{
@@ -143,15 +143,7 @@ export class SecController {
 								return res.status(500).send({'employees': employeeResult})
 							}
 						}).catch((e) => {
-							//this code means that the key already exist
-							if (e.code == '11000'){
-								dbo.collection('employees').findOneAndUpdate({employee_id : newEmployee.employee_id}, {$set : {status : 'Active'}, $push: {jobs : newEmployee.jobs[0]}}).then(() => {
-									return res.status(201).send({'user': userResult, 'employee': "Updated the existing employee with the employee_id"});
-								})		
-							}else{
-								//some other employees table error
-								return res.status(500).send({'user': userResult, 'employee' : e})
-							}
+							return res.status(500).send({'user': userResult, 'employee' : e})
 						})
 					}else{
 						//user result was not acknowledged
