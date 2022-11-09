@@ -8,7 +8,7 @@ class Application {
 
     constructor() {
         this.app = express();
-        this.port = process.env.serverPort?+process.env.serverPort:3000;
+        this.port = process.env.PORT?+process.env.PORT:3000;
         this.app.use(express.urlencoded({ extended: false }));
         this.app.use(express.json());
         this.initCors();

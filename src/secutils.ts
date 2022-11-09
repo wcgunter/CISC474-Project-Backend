@@ -35,7 +35,6 @@ export class SecUtils{
 		const result=SecUtils.verifyToken(token);
 		if (result){
 			// set data for body
-			req.body.username = result.username;
 			req.body.employee_id = result.employee_id;
 			return next();
 		}

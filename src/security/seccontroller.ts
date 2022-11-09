@@ -2,9 +2,17 @@ import express from "express";
 import { Db, ObjectId } from "mongodb";
 import { MongoDb } from "../MongoDb";
 import { SecUtils } from "../secutils";
+import { Employee } from "../types";
+
 
 export class SecController {
-
+	
+	/**
+     * Authenticate an employee
+     * @body username
+	 * @body password
+     * @returns auth token
+     */
 	public async login(req: express.Request, res: express.Response): Promise<void> {
         let {username, password} = req.body;
 		if (!username || !password) {
@@ -24,8 +32,8 @@ export class SecController {
 				res.status(403).send({ status: 'error', data: 'Invalid login' });
 				return;
 			}
-			// username and employee ID get sent in the token
-			const token = SecUtils.getToken({ _id: result._id, username: username, employee_id: result._id });
+			// employee ID gets sent in the token
+			const token = SecUtils.getToken({ _id: result._id, employee_id: result._id });
 			db.close();
 			res.status(200).send({ status: 'ok', data: { token: token } });
 		} catch (e) {
@@ -38,11 +46,20 @@ export class SecController {
         res.send('change password endpoint');
     }
 
+	/**
+     * Terminate an employee and delete the user object
+     * @body employee_id (populated via secutils) - id of the manager of the employee to terminate
+	 * @body user.employee_id - the employee_id of the employee to terminate
+     * @returns result
+     */
 	public async removeUser(req: express.Request, res: express.Response): Promise<void> {
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
 
-		let target = req.body.user.employee_id
+		// employee_id = id of employee to remove, sent in body
+		let employee_id = req.body.user.employee_id;
+		// manager_id = id of authenticated user
+		let manager_id = req.body.employee_id;
 
 		//checks if there is an admin with that username
 		dbo.collection('users').findOne({ _id: new ObjectId(req.body.employee_id) }).then((existingUser: any) => {
@@ -69,6 +86,20 @@ export class SecController {
 		})	
 	}
 
+	/**
+     * Register a new user and create a new employee
+     * @body employee_id (populated via secutils) - this is the id of the manager creating a new employee
+	 * @body username - username of new user
+	 * @body password - password of new user
+	 * @body fisrt_name - FN of employee
+	 * @body last_name - LN of employee
+	 * @body address - address of employee
+	 * @body job_title - starting job title
+	 * @body hourly_pay - employee starting pay
+	 * @body job_level - L1/L2... level of new employee
+	 * 
+     * @returns employee_id of the new employee
+     */
 	public async register(req: express.Request, res: express.Response): Promise<void> {
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
@@ -92,10 +123,8 @@ export class SecController {
 					pay_rate: req.body.employee.job.pay_rate,
 					level: req.body.employee.job.level
 			}],
-			manager_id: req.body.employee.manager_id,
+			manager_id: manager_id,
 			status: "Active",
-			logs: [] // no logs for new employee
-
 		}
 
 		//checks if there is an admin with that username
