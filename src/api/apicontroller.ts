@@ -18,7 +18,7 @@ export class ApiController {
 
             console.log(result.logs);
             db.close();
-            res.status(200).send({status: 200, data: result.logs});
+            res.status(200).send({status: 'ok', data: result.logs});
             
         });
     }
@@ -37,7 +37,7 @@ export class ApiController {
             if (err) throw err;
             console.log(result);
             db.close();
-            res.status(200).send({status: 200, data: result});
+            res.status(200).send({status: 'ok', data: result});
           });
     }
 
@@ -90,7 +90,7 @@ export class ApiController {
                 }
             });
             db.close();
-            res.status(200).send({status: 200, data: {hours_worked: time_hours, pay: pay_dollars}});
+            res.status(200).send({status: 'ok', data: {hours_worked: time_hours, pay: pay_dollars}});
         });
     }
 
@@ -123,7 +123,7 @@ export class ApiController {
 
                 if(clockEvent[0]?.logs[0]){
                     db.close();
-                    res.status(400).send({status: 400, data: "Error - clock event exists. Cannot clock in"});
+                    res.status(400).send({status: 'error', data: "Error - clock event exists. Cannot clock in"});
                     return;
                 }
 
@@ -137,9 +137,9 @@ export class ApiController {
 
                 console.log(response);
                 if(response.modifiedCount > 0)
-                    res.status(200).send({status: 200, data: "Inserted clock event"});
+                    res.status(200).send({status: 'ok', data: "Inserted clock event"});
                 else
-                    res.status(400).send({status: 400, data: "Failed to insert clock event"});
+                    res.status(400).send({status: 'error', data: "Failed to insert clock event"});
 
                 
             } else if (clock_event === 'out'){
@@ -151,7 +151,7 @@ export class ApiController {
 
                 if (clockEvent[0]?.logs[0].clock_out_date_time){            
                     db.close();
-                    res.status(400).send({status: 400, data: "Error - clock event exists. Cannot clock out"});
+                    res.status(400).send({status: 'error', data: "Error - clock event exists. Cannot clock out"});
                     return;
                 }
 
@@ -165,15 +165,15 @@ export class ApiController {
 
                 console.log(response);
                 if(response.modifiedCount > 0)
-                    res.status(200).send({status: 200, data: "Inserted clock event"});
+                    res.status(200).send({status: 'ok', data: "Inserted clock event"});
                 else
-                    res.status(400).send({status: 400, data: "Failed to insert clock event"});
+                    res.status(400).send({status: 'error', data: "Failed to insert clock event"});
 
             }
         }
         catch (err) {
             console.error(err);
-            res.send(500).send({status: 500, data: 'Internal Server Error'});
+            res.send(500).send({status: 'error', data: 'Internal Server Error'});
         }
     }
 
@@ -198,13 +198,13 @@ export class ApiController {
 
             console.log(response);
             if(response.modifiedCount > 0)
-                res.status(200).send({status: 200, data: "deleted clock event"});
+                res.status(200).send({status: 'ok', data: "deleted clock event"});
             else
-                res.status(400).send({status: 400, data: "Failed to delete clock event"});
+                res.status(400).send({status: 'error', data: "Failed to delete clock event"});
         }
         catch (err) {
             console.error(err);
-            res.send(500).send({status: 500, data: 'Internal Server Error'});
+            res.send(500).send({status: 'error', data: 'Internal Server Error'});
         }
     }
 
@@ -234,13 +234,13 @@ export class ApiController {
 
             console.log(response);
             if(response.modifiedCount > 0)
-                res.status(200).send({status: 200, data: "Updated clock event"});
+                res.status(200).send({status: 'ok', data: "Updated clock event"});
             else
-                res.status(400).send({status: 400, data: "Failed to update clock event"});
+                res.status(400).send({status: 'error', data: "Failed to update clock event"});
     }
         catch (err) {
             console.error(err);
-            res.status(500).send({status: 500, data: 'Internal Server Error'});
+            res.status(500).send({status: 'error', data: 'Internal Server Error'});
         }
     }
 }

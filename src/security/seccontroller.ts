@@ -67,15 +67,15 @@ export class SecController {
 			if (existingUser?.admin){
 				dbo.collection('employees').findOneAndUpdate({employee_id: target}, {$set :{status: "Terminated"}}).then((employeeResult) => {
 					if (!employeeResult.ok){
-						return res.status(500).send({'employee': employeeResult})
+						return res.status(500).send({status: 'error', data: 'Internal Server Error'})
 					}else if (!employeeResult.value){
-						return res.status(404).send({'employee': 'Employee ID not found'})
+						return res.status(404).send({status: 'error', data: 'Employee ID not found'})
 					}else{
 						dbo.collection('users').findOneAndDelete({employee_id: target}).then((userResult) => {
 							if (userResult.ok){
-								return res.status(200).send({'user' : userResult.value, 'employee': employeeResult.value})
+								return res.status(200).send({status: 'ok', data: {'user' : userResult.value, 'employee': employeeResult.value}})
 							}else{
-								return res.status(500).send({'user' : userResult, 'employee': employeeResult})
+								return res.status(500).send({status: 'error', data: 'Internal server error'})
 							}
 						})
 					}
@@ -137,21 +137,21 @@ export class SecController {
 						newEmployee.employee_id = userResult.insertedId.toString();
 						dbo.collection('employees').insertOne({_id:userResult.insertedId, ...newEmployee}).then((employeeResult) => {
 							if (employeeResult.acknowledged){
-								return res.status(201).send({'user': userResult, 'employee' : employeeResult});
+								return res.status(200).send({status: 'ok', data: {'user': userResult, 'employee' : employeeResult}});
 							}else{
 							//employee result was not acknowledged
-								return res.status(500).send({'employees': employeeResult})
+								return res.status(500).send({status: 'error', data:'Internal Server Error'})
 							}
 						}).catch((e) => {
-							return res.status(500).send({'user': userResult, 'employee' : e})
+							return res.status(500).send({status: 'error', data:'Internal Server Error'})
 						})
 					}else{
 						//user result was not acknowledged
-						return res.status(500).send(userResult);
+						return res.status(500).send({status: 'error', data:'Internal Server Error'});
 					}
 				}).catch((e)=>{
 					if(e.code == "11000"){
-						return res.status(302).send("Employee ID in user table already exists")
+						return res.status(302).send({status: 'error', data: "Employee ID in user table already exists"})
 					}
 				})
 			}else{
@@ -173,11 +173,11 @@ export class SecController {
 			if (adminResult?.admin){
 				dbo.collection("employees").findOneAndUpdate({employee_id: updatedEmployee.employee_id}, {$set: updatedEmployee}).then((employeeResult) => {
 					if (!employeeResult.ok){
-						return res.status(500).send(employeeResult)
+						return res.status(500).send({status: 'error', data:'Internal Server Error'})
 					}else if (!employeeResult.value){
-						return res.status(404).send({'employee': 'Employee ID not found'})
+						return res.status(404).send({status: 'error', data: 'Employee ID not found'})
 					}else{
-						return res.status(200).send(employeeResult)
+						return res.status(200).send({status: 'ok', data: employeeResult})
 					}
 				})
 			}else{
@@ -200,11 +200,11 @@ export class SecController {
 			if (adminResult?.admin){
 				dbo.collection("users").findOneAndUpdate({employee_id: updatedUser.employee_id}, {$set: updatedUser}).then((userResult) => {
 					if (!userResult.ok){
-						return res.status(500).send(userResult)
+						return res.status(500).send({status: 'error', data:'Internal Server Error'})
 					}else if (!userResult.value){
-						return res.status(404).send({'employee': 'Employee ID not found'})
+						return res.status(404).send({status: 'error', data: 'Employee ID not found'})
 					}else{
-						return res.status(200).send(userResult)
+						return res.status(200).send({status: 'ok', data: userResult})
 					}
 				})
 			}else{
