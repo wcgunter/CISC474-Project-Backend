@@ -36,6 +36,7 @@ export class SecUtils{
 		if (result){
 			// set data for body
 			req.body.employee_id = result.employee_id;
+			req.body.admin = result.admin;
 			return next();
 		}
         res.send({status:'error',data:'Security error'});
