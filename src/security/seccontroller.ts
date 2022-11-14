@@ -33,7 +33,7 @@ export class SecController {
 				return;
 			}
 			// employee ID gets sent in the token
-			const token = SecUtils.getToken({ _id: result._id, employee_id: result._id });
+			const token = SecUtils.getToken({ _id: result._id, employee_id: result._id, admin: result.admin });
 			db.close();
 			res.status(200).send({ status: 'ok', data: { token: token } });
 		} catch (e) {
@@ -212,4 +212,13 @@ export class SecController {
 			}
 		})
 	}
+
+	public static validateAdmin(req:express.Request,res:express.Response): void{
+		if (req.body.admin === true)
+			res.send({status: 'ok', data: null});
+		else
+			res.send({status:'error', data:'Invalid request'});
+        
+        return;
+    }
 }
