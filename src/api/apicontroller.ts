@@ -95,6 +95,39 @@ export class ApiController {
     }
 
     /**
+     * Get the hours worked and pay for the authenticated employee
+     *  in a given time frame
+     * @body employee_id (populated via secutils)
+     * @param startDate - start of time period in ms
+     * @param endDate - end of time period in ms
+     * @returns Json object with collection of Log objects
+     */
+     public async getEmployeeTimesheet(req: express.Request, res: express.Response): Promise<void> {
+        let employee_id = req.body.employee_id;
+        let in_start_date = new Date(Number(req.params.startDate));
+        let in_end_date = new Date(Number(req.params.endDate));
+        let db = await MongoDb.client.connect(); //connect to mongo
+        let dbo = db.db(MongoDb.database); //get our database
+        let output: TimeSheet[] = [];
+
+        dbo.collection("employees").findOne({"employee_id":employee_id}, (err:any, result:any) => {
+            if (err) throw err;
+            var pay_dollars = 0;
+            var time_hours = 0;
+            var pay_rate = 0;
+            result.logs.forEach((element: TimeSheet) => {
+                var start_date = new Date(element.clock_in_date_time);
+                var end_date = new Date(element.clock_out_date_time);
+                if ((in_start_date <= end_date && start_date <= in_end_date)) {
+                    output.push(element);
+                }
+            });
+            db.close();
+            res.status(200).send({status: 'ok', data: {output}});
+        });
+    }
+
+    /**
      * Posts a new clock event for the authenticated employee
      *  Creates new log object for 'in' events and
      *  adds field clock_out_date_time for 'out' events

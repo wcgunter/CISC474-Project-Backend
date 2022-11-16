@@ -10,6 +10,7 @@ export class ApiRouter {
     public getRouter(): express.Router {
         
         this.router.get('/employee/pay/:startDate/:endDate', SecUtils.middleware, this.controller.getEmployeesPay);
+        this.router.get('/employee/timesheet/:startDate/:endDate', SecUtils.middleware, this.controller.getEmployeeTimesheet);
 
         this.router.get('/employee/logs', SecUtils.middleware, this.controller.getEmployeeLogs);
         this.router.get('/employees/', SecUtils.middleware, this.controller.getEmployees);
