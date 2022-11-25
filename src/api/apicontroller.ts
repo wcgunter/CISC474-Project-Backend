@@ -111,6 +111,16 @@ export class ApiController {
 
         let outputTimesheets: FullTimesheet[] = [];
 
+        const firstTimesheet: FullTimesheet = {
+            position: -1,
+            clockIn: Date(),
+            clockOut: Date(),
+            hoursWorked: 0,
+            pay: 0
+        };
+
+        outputTimesheets.push(firstTimesheet);
+
         dbo.collection("employees").findOne({"employee_id":employee_id}, (err:any, result:any) => {
             if (err) throw err;
             var position = 0;
