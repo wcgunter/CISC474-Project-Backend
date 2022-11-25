@@ -25,6 +25,14 @@ export interface TimeSheet {
     clock_out_date_time: string;
 }
 
+export interface FullTimesheet {
+	position: number;
+	clockIn: string;
+	clockOut: string;
+	hoursWorked: number;
+	pay: number;
+}
+
 export interface Job {
     start_date: string;
     title: string;

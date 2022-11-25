@@ -1,6 +1,6 @@
 import express from "express";
 import { MongoDb } from "../MongoDb";
-import { TimeSheet } from "../types";
+import { TimeSheet, FullTimesheet } from "../types";
 
 export class ApiController {
 
@@ -108,6 +108,63 @@ export class ApiController {
         let in_end_date = new Date(Number(req.params.endDate));
         let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
+
+        let outputTimesheets: FullTimesheet[] = [];
+
+        dbo.collection("employees").findOne({"employee_id":employee_id}, (err:any, result:any) => {
+            if (err) throw err;
+            var position = 0;
+            result.logs.forEach((element: TimeSheet) => {
+                var pay_dollars = 0;
+                var time_hours = 0;
+                var pay_rate = 0;
+                var start_date = new Date(element.clock_in_date_time);
+                var end_date = new Date(element.clock_out_date_time);
+                if ((in_start_date <= end_date && start_date <= in_end_date)) {
+                    var largerStart = 0;
+                    var smallerEnd = 0;
+                    if (start_date > in_start_date) {
+                        largerStart = start_date.getTime();
+                    } else {
+                        largerStart = in_start_date.getTime();
+                    }
+                    if (end_date < in_end_date) {
+                        smallerEnd = end_date.getTime();
+                    } else {
+                        smallerEnd = in_end_date.getTime();
+                        
+                    }
+                    let time_worked = (smallerEnd - largerStart) / 1000 / 60 / 60;
+                    time_hours += time_worked;
+                    result.jobs.forEach((job: any) => {
+                        var job_start_date = new Date(String(job.start_date));
+                        if(start_date >= job_start_date) {
+                            pay_rate = job.pay_rate;
+                        }
+                    });
+                    let clock_in_date_obj = new Date(largerStart);
+                    let clock_out_date_obj = new Date(smallerEnd);
+                    let clock_in_date = clock_in_date_obj.toDateString();
+                    let clock_out_date = clock_out_date_obj.toDateString();
+                    pay_dollars += time_hours * pay_rate;
+                    const newTimesheet: FullTimesheet = {
+                        position: position,
+                        clockIn: clock_in_date,
+                        clockOut: clock_out_date,
+                        hoursWorked: time_hours,
+                        pay: pay_dollars
+                    };
+                    outputTimesheets.push(newTimesheet);
+                }
+            });
+            db.close();
+            res.status(200).send({status: 'ok', data: outputTimesheets});
+        });
+        /* let employee_id = req.body.employee_id;
+        let in_start_date = new Date(Number(req.params.startDate));
+        let in_end_date = new Date(Number(req.params.endDate));
+        let db = await MongoDb.client.connect(); //connect to mongo
+        let dbo = db.db(MongoDb.database); //get our database
         let output: TimeSheet[] = [];
 
         dbo.collection("employees").findOne({"employee_id":employee_id}, (err:any, result:any) => {
@@ -124,7 +181,7 @@ export class ApiController {
             });
             db.close();
             res.status(200).send({status: 'ok', data: {output}});
-        });
+        }); */
     }
 
     /**
