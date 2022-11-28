@@ -165,6 +165,7 @@ export class ApiController {
                         pay: pay_dollars
                     };
                     outputTimesheets.push(newTimesheet);
+                    position++;
                 }
             });
             db.close();
