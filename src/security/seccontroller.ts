@@ -109,7 +109,7 @@ export class SecController {
 		let newUser:any = {
 			username : req.body.username,
 			password : await SecUtils.createHash(req.body.password),
-			admin : req.body.admin
+			admin : req.body.is_admin
 		}
 
 		let newEmployee:any = {
