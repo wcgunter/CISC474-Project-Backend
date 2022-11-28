@@ -208,10 +208,11 @@ export class ApiController {
 							let clock_out_date_obj = new Date(
 								smallerEnd
 							);
+                            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 							let clock_in_date =
-								clock_in_date_obj.toString();
+								clock_in_date_obj.toLocaleString("en-US", { timeZone: timezone });
 							let clock_out_date =
-								clock_out_date_obj.toString();
+								clock_out_date_obj.toLocaleString("en-US", { timeZone: timezone });
 							pay_dollars += time_hours * pay_rate;
 							const newTimesheet: FullTimesheet = {
 								position: position,
