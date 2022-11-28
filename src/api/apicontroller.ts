@@ -123,7 +123,7 @@ export class ApiController {
 
         dbo.collection("employees").findOne({"employee_id":employee_id}, (err:any, result:any) => {
             if (err) throw err;
-            var position = 0;
+            var position = 1;
             result.logs.forEach((element: TimeSheet) => {
                 var pay_dollars = 0;
                 var time_hours = 0;
