@@ -8,6 +8,7 @@ export class SecRouter {
 
     public getRouter(): express.Router {
         this.router.get("/validate/admin", SecUtils.middleware, SecController.validateAdmin);
+        this.router.get("/validate/", SecUtils.middleware, SecController.validate);
         this.router.post('/token', this.controller.login);
 		this.router.post('/register', SecUtils.middleware ,this.controller.register);
 		this.router.post('/changepwd', this.controller.changePwd);
