@@ -221,4 +221,13 @@ export class SecController {
         
         return;
     }
+
+	public static validate(req:express.Request,res:express.Response): void{
+		if (req.body.employee_id)
+			res.send({status: 'ok', data: null});
+		else
+			res.send({status:'error', data:'Invalid request'});
+        
+        return;
+    }
 }
