@@ -209,9 +209,9 @@ export class ApiController {
 								smallerEnd
 							);
 							let clock_in_date =
-								clock_in_date_obj.toDateString();
+								clock_in_date_obj.toLocaleDateString();
 							let clock_out_date =
-								clock_out_date_obj.toDateString();
+								clock_out_date_obj.toLocaleDateString();
 							pay_dollars += time_hours * pay_rate;
 							const newTimesheet: FullTimesheet = {
 								position: position,
