@@ -27,6 +27,23 @@ export class ApiController {
 		);
 	}
 
+	public async getEmployeeName(
+		req: express.Request,
+		res: express.Response
+	): Promise<void> {
+		let db = await MongoDb.client.connect(); //connect to mongo
+		let dbo = db.db(MongoDb.database); //get our database
+
+		dbo.collection("employees").findOne(
+			{ employee_id: req.body.employee_id },
+			(err: any, result: any) => {
+				if (err) throw err;
+				db.close();
+				res.status(200).send({ status: "ok", data: result.first_name });
+			}
+		);
+	}
+
 	/**
 	 * Get the list of employees under the authenticated manager
 	 * @body employee_id (populated via secutils)

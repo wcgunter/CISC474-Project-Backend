@@ -13,6 +13,7 @@ export class ApiRouter {
         this.router.get('/employee/timesheet/:startDate/:endDate', SecUtils.middleware, this.controller.getEmployeeTimesheet);
 
         this.router.get('/employee/logs', SecUtils.middleware, this.controller.getEmployeeLogs);
+        this.router.get('/employee/about/firstName', SecUtils.middleware, this.controller.getEmployeeName);
         this.router.get('/employees/', SecUtils.middleware, this.controller.getEmployees);
 
         this.router.post('/clock/', SecUtils.middleware, this.controller.postClockEvent);
