@@ -226,9 +226,9 @@ export class ApiController {
 								smallerEnd
 							);
 							let clock_in_date =
-								clock_in_date_obj.toLocaleString("en-US", {timeStyle: "medium", dateStyle: "short"});
+								clock_in_date_obj.toLocaleString("en-US", {timeStyle: "medium", dateStyle: "short", timeZone: "UTC"});
 							let clock_out_date =
-								clock_out_date_obj.toLocaleString("en-US", {timeStyle: "medium", dateStyle: "short"});
+								clock_out_date_obj.toLocaleString("en-US", {timeStyle: "medium", dateStyle: "short", timeZone: "UTC"});
 							pay_dollars += time_hours * pay_rate;
 							pay_dollars = Math.round(pay_dollars * 100) / 100;
 							time_hours = Math.round(time_hours * 100) / 100;
