@@ -229,13 +229,15 @@ export class ApiController {
 								clock_in_date_obj.toLocaleString("en-US", {timeStyle: "medium", dateStyle: "short", timeZone: "UTC"});
 							let clock_out_date =
 								clock_out_date_obj.toLocaleString("en-US", {timeStyle: "medium", dateStyle: "short", timeZone: "UTC"});
+							let clock_in_string = clock_in_date.concat(" UTC");
+							let clock_out_string = clock_out_date.concat(" UTC");
 							pay_dollars += time_hours * pay_rate;
 							pay_dollars = Math.round(pay_dollars * 100) / 100;
 							time_hours = Math.round(time_hours * 100) / 100;
 							const newTimesheet: FullTimesheet = {
 								position: position,
-								clockIn: clock_in_date,
-								clockOut: clock_out_date,
+								clockIn: clock_in_string,
+								clockOut: clock_out_string,
 								hoursWorked: time_hours,
 								pay: pay_dollars,
 							};
