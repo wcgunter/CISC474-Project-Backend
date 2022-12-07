@@ -253,28 +253,7 @@ export class ApiController {
 				}
 			}
 		);
-		/* let employee_id = req.body.employee_id;
-        let in_start_date = new Date(Number(req.params.startDate));
-        let in_end_date = new Date(Number(req.params.endDate));
-        let db = await MongoDb.client.connect(); //connect to mongo
-        let dbo = db.db(MongoDb.database); //get our database
-        let output: TimeSheet[] = [];
-
-        dbo.collection("employees").findOne({"employee_id":employee_id}, (err:any, result:any) => {
-            if (err) throw err;
-            var pay_dollars = 0;
-            var time_hours = 0;
-            var pay_rate = 0;
-            result.logs.forEach((element: TimeSheet) => {
-                var start_date = new Date(element.clock_in_date_time);
-                var end_date = new Date(element.clock_out_date_time);
-                if ((in_start_date <= end_date && start_date <= in_end_date)) {
-                    output.push(element);
-                }
-            });
-            db.close();
-            res.status(200).send({status: 'ok', data: {output}});
-        }); */
+		
 	}
 
 	/**

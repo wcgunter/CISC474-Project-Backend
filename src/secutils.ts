@@ -7,19 +7,24 @@ import { Config } from './config';
 export class SecUtils{
 	static SALT_ROUNDS=10;
 
-	//converts the object to a jwt token
+	/**
+	 * Generates a JWT with object data
+	 * @param obj 
+	 * @returns jwt
+	 */
 	public static getToken(obj:any):string{
 		return jwt.sign(obj, Config.tokenSecret);
 	}
 	
-	//validates token and returns encoded data (or null on verification failure)
+	/**
+	 * Validates JWT and returns decoded object
+	 * @param token 
+	 * @returns decoded object or null
+	 */
 	public static verifyToken(token:string|undefined):any{
 		if (!token||token.length==0)
 			return null;
 		try{
-			//in production I would take the value of verify,
-			//extract the user and make sure they are still
-			//valid in the database by doing a db lookup
 			return jwt.verify(token, Config.tokenSecret);
 		}catch(e){
 			console.error(e);
@@ -27,9 +32,14 @@ export class SecUtils{
 		}
 	}
 
-	//takes a request and verifies
-	//responds on failure, calls next function (controller function) on success
-	//populates body with the contents of the token expected in the Authentication header
+	/**
+	 * Takes a request and verifies authorization
+	 * If authenticated, the request body is populated with the token contents
+	 * @param req 
+	 * @param res 
+	 * @param next 
+	 * @returns 
+	 */
 	public static middleware(req:express.Request,res:express.Response,next:express.NextFunction){
 		const token=req.headers.authorization?.split(' ')[1];
 		const result=SecUtils.verifyToken(token);
@@ -42,12 +52,21 @@ export class SecUtils{
         res.send({status:'error',data:'Security error'});
 	}
 
-	//compares a string and it's hashed equivalent
+	/**
+	 * Compares a password string to a hashed equivalent
+	 * @param password 
+	 * @param hash 
+	 * @returns 
+	 */
 	public static async compareToHash(password:string,hash:string):Promise<boolean>{
 		return await bcrypt.compare(password,hash);
 	}
 
-	//creates a hash for a string
+	/**
+	 * Creates a hash on an input string
+	 * @param input 
+	 * @returns hashed string
+	 */
 	public static async createHash(input:string):Promise<string>{
 		const salt=await bcrypt.genSalt(SecUtils.SALT_ROUNDS);
 		return await bcrypt.hash(input,salt);

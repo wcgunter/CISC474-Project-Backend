@@ -159,6 +159,10 @@ export class SecController {
 			}
 		})
 	}
+
+	/**
+	 * Update an employee record in the employees table 
+	 */
 	public async updateEmployee(req: express.Request, res: express.Response): Promise<void> {
 		let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
@@ -186,6 +190,9 @@ export class SecController {
 		})
 	}
 
+	/**
+	 * Update a user record in the users table 
+	 */
 	public async updateUser(req: express.Request, res: express.Response): Promise<void> {
 		let db = await MongoDb.client.connect(); //connect to mongo
         let dbo = db.db(MongoDb.database); //get our database
@@ -213,6 +220,10 @@ export class SecController {
 		})
 	}
 
+	
+	/**
+	 * Validate the request is authenticated with an admin user 
+	 */
 	public static validateAdmin(req:express.Request,res:express.Response): void{
 		if (req.body.admin === true)
 			res.send({status: 'ok', data: null});
@@ -222,6 +233,10 @@ export class SecController {
         return;
     }
 
+	
+	/**
+	 * Validate the request is authenticated 
+	 */
 	public static validate(req:express.Request,res:express.Response): void{
 		if (req.body.employee_id)
 			res.send({status: 'ok', data: null});
